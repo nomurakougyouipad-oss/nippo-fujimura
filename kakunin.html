@@ -211,7 +211,14 @@ window.NIPPO = {
     if(configured && window.firebase && firebase.initializeApp){
       window.NIPPO_MODE = "firebase";
       if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(c);
-      return firebase.database();
+      const fdb = firebase.database();
+      /* 名簿がまだ1人も入っていないときだけ、上の members を最初の名簿として入れる
+         （すでに入っていれば何もしない。管理画面で直した名簿を上書きすることはない） */
+      const first = seedFrom(N).master.workers;
+      if(Object.keys(first).length){
+        fdb.ref("master/workers").transaction(cur => (cur === null ? first : undefined)).catch(() => {});
+      }
+      return fdb;
     }
     if(configured){
       /* 本番の設定はあるのに、Firebase の部品が読めなかった＝ネットにつながっていない */
